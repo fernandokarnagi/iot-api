@@ -17,7 +17,7 @@ const mqttPort = process.env.MQTT_PORT;
 const mqttOptions = {
     reconnectPeriod: 1000,
     resubscribe: true,
-    clientId: "iot-app",
+    clientId: "iot-api",
     host: mqttHost,
     port: mqttPort,
     protocolId: 'MQTT',
