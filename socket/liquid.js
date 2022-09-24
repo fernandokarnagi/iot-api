@@ -9,13 +9,14 @@ exports.socket = async (socketObj, mqttOptions) => {
     const mqttHost = mqttOptions.host;
     const mqttPort = mqttOptions.port;
 
-    const topic = socketObj.handshake.query.topic;
+    const topicsTemp = socketObj.handshake.query.topics;
+    const topics = topicsTemp.split("~")
 
-    if (!topic) {
+    if (!topics) {
         return;
     }
 
-    logger.debug("[" + socketObj.id + "] subscribing to topic: ", topic);
+    logger.debug("[" + socketObj.id + "] subscribing to topic: ", topics);
 
     const mqttClient = mqtt.connect(mqttUrl, mqttOptions);
 
@@ -39,11 +40,14 @@ exports.socket = async (socketObj, mqttOptions) => {
     mqttClient.on('connect', () => {
         logger.debug("[" + socketObj.id + '] connected ' + mqttHost + ':' + mqttPort);
 
-        mqttClient.subscribe(topic, function (err) {
-            if (!err) {
-                logger.debug("[" + socketObj.id + "] subscribed to mqtt topic");
-            }
-        });
+        for (var i = 0; i < topics.length; i++) {
+            mqttClient.subscribe(topics[i], function (err) {
+                if (!err) {
+                    logger.debug("[" + socketObj.id + "] subscribed to mqtt topic");
+                }
+            });
+        }
+
     });
 
     mqttClient.on('message', function (topic, message) {
