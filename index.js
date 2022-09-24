@@ -43,5 +43,4 @@ liquid.on('connection', (socket) => {
     require('./socket/liquid').socket(socket, mqttOptions);
 });
 
-const PORT = process.env.API_PORT || 3500;
-server.listen(PORT, '0.0.0.0', () => logger.info(`Listening on port ${PORT}`));
+server.listen(process.env.PORT, '0.0.0.0', () => logger.info(`Listening on port ${process.env.PORT}`));
