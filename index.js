@@ -4,10 +4,13 @@ const bodyParser = require('body-parser');
 const app = require('express')();
 const server = require('http').createServer(app);
 const logger = require('./winston');
-const mqtt = require('mqtt');
+const cors = require('cors');
 
 // Middlewares
-app.use(require('cors')());
+// app.use(require('cors')());
+app.use(cors({
+    origin: '*'
+}));
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
@@ -23,44 +26,21 @@ const mqttOptions = {
     protocolId: 'MQTT',
     protocolVersion: 4,
 };
-const mqttUrl = null;
-const mqttClient = mqtt.connect(mqttUrl, mqttOptions);
 
-mqttClient.on('error', (error) => {
-    logger.error('error ' + mqttHost + ':' + mqttPort, error);
-});
+// const liquidRoputer = require('./api/liquid');
+// app.use('/api/liquid', liquidRouter);
 
-mqttClient.on('offline', () => {
-    logger.debug('is offline ' + mqttHost + ':' + mqttPort);
-});
+// const analyticsRouter = require('./api/analytics');
+// app.use('/api/analytics', analyticsRouter);
 
-mqttClient.on('reconnect', () => {
-    logger.debug('is reconnecting ' + mqttHost + ':' + mqttPort);
-});
-
-mqttClient.on('end', () => {
-    logger.debug('ended ' + mqttHost + ':' + mqttPort);
-});
-
-// only kafka connection awaiting is required, we can ignore this
-mqttClient.on('connect', () => {
-    logger.debug('connected ' + mqttHost + ':' + mqttPort);
-});
-
-const liquidRouter = require('./api/liquid');
-app.use('/api/liquid', liquidRouter);
-
-const analyticsRouter = require('./api/analytics');
-app.use('/api/analytics', analyticsRouter);
-
-// Water Quality Socket IO handler
+// Liquid Socket IO handler
 const liquid = require('socket.io')(server, {
     path: '/liquid',
 });
 
 liquid.on('connection', (socket) => {
     logger.info('New client connected, socket: ', socket.id);
-    require('./socket/liquid').socket(socket);
+    require('./socket/liquid').socket(socket, mqttOptions);
 });
 
 const PORT = process.env.API_PORT || 3500;

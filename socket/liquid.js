@@ -1,48 +1,50 @@
 /** @format */
 
-const { Kafka } = require('kafkajs');
 const logger = require('../winston');
-const { KAFKA_CLIENT_ID, KAFKA_BROKER, MODE } = process.env;
-const PREFIX = MODE && MODE === 'DEV' ? '-dev' : '';
+const mqtt = require('mqtt');
 
-exports.socket = async (socketObj) => {
-    const { token, topic } = socketObj.handshake.query;
+exports.socket = async (socketObj, mqttOptions) => {
 
-    const kafka = new Kafka({
-        clientId: KAFKA_CLIENT_ID,
-        brokers: [KAFKA_BROKER],
+    const mqttUrl = null;
+    const mqttClient = mqtt.connect(mqttUrl, mqttOptions);
+
+    mqttClient.on('error', (error) => {
+        logger.error('error ' + mqttHost + ':' + mqttPort, error);
     });
 
-    const consumer = kafka.consumer({ groupId: socketObj.id });
-    await consumer.connect();
-
-    // Subscribing to complete TFA for this account
-    await consumer.subscribe({ topic });
-
-    // Get notified when this socket has join Kafka Consumer Group.
-    // Only when join happens, then we notify socket client to proceed with subsequent requests
-    const { REQUEST } = consumer.events;
-    consumer.on(REQUEST, ({ payload }) => {
-        if (payload.apiName === 'JoinGroup' && !socketObj.initialized) {
-            logger.debug('Sending socketInitialized event');
-            socketObj.initialized = true;
-            socketObj.emit('socketInitialized');
-        }
+    mqttClient.on('offline', () => {
+        logger.debug('is offline ' + mqttHost + ':' + mqttPort);
     });
 
-    consumer.run({
-        eachMessage: async ({ topic, partition, message }) => {
-
-            const messageTemp = Buffer.from(message.value, 'binary'); // Read string into a buffer
-            const messageObj = JSON.parse(messageTemp);
-            logger.debug("Emitting to [" + socketObj.id + "], from topic [" + topic + "], message: " + JSON.stringify(messageObj));
-            socketObj.emit(topic, messageObj);
-        },
+    mqttClient.on('reconnect', () => {
+        logger.debug('is reconnecting ' + mqttHost + ':' + mqttPort);
     });
+
+    mqttClient.on('end', () => {
+        logger.debug('ended ' + mqttHost + ':' + mqttPort);
+    });
+
+    // only kafka connection awaiting is required, we can ignore this
+    mqttClient.on('connect', () => {
+        logger.debug('connected ' + mqttHost + ':' + mqttPort);
+
+        client.subscribe('tenant001/building001/liquid/001', function (err) {
+            if (!err) {
+                console.log("subscribed to mqtt topic");
+            }
+        });
+    });
+
+    mqttClient.on('message', function (topic, message) {
+        // message is Buffer
+        console.log(message.toString());
+        socketObj.emit(topic, message.toString());
+    })
+
 
     socketObj.on('disconnect', async () => {
         logger.info('Client disconnected, socket: ', socketObj.id);
-        await consumer.disconnect();
+        await mqttClient.end();
     });
 
 };
