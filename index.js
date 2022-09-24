@@ -36,6 +36,9 @@ const mqttOptions = {
 // Liquid Socket IO handler
 const liquid = require('socket.io')(server, {
     path: '/liquid',
+    cors: {
+        origin: '*',
+    }
 });
 
 liquid.on('connection', (socket) => {

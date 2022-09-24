@@ -6,44 +6,54 @@ const mqtt = require('mqtt');
 exports.socket = async (socketObj, mqttOptions) => {
 
     const mqttUrl = null;
+    const mqttHost = mqttOptions.host;
+    const mqttPort = mqttOptions.port;
+
+    const topic = socketObj.handshake.query.topic;
+
+    if (!topic) {
+        return;
+    }
+
+    logger.debug("[" + socketObj.id + "] subscribing to topic: ", topic);
+
     const mqttClient = mqtt.connect(mqttUrl, mqttOptions);
 
     mqttClient.on('error', (error) => {
-        logger.error('error ' + mqttHost + ':' + mqttPort, error);
+        logger.error("[" + socketObj.id + '] error ' + mqttHost + ':' + mqttPort, error);
     });
 
     mqttClient.on('offline', () => {
-        logger.debug('is offline ' + mqttHost + ':' + mqttPort);
+        logger.debug("[" + socketObj.id + '] is offline ' + mqttHost + ':' + mqttPort);
     });
 
     mqttClient.on('reconnect', () => {
-        logger.debug('is reconnecting ' + mqttHost + ':' + mqttPort);
+        logger.debug("[" + socketObj.id + '] is reconnecting ' + mqttHost + ':' + mqttPort);
     });
 
     mqttClient.on('end', () => {
-        logger.debug('ended ' + mqttHost + ':' + mqttPort);
+        logger.debug("[" + socketObj.id + '] ended ' + mqttHost + ':' + mqttPort);
     });
 
     // only kafka connection awaiting is required, we can ignore this
     mqttClient.on('connect', () => {
-        logger.debug('connected ' + mqttHost + ':' + mqttPort);
+        logger.debug("[" + socketObj.id + '] connected ' + mqttHost + ':' + mqttPort);
 
-        client.subscribe('tenant001/building001/liquid/001', function (err) {
+        mqttClient.subscribe(topic, function (err) {
             if (!err) {
-                console.log("subscribed to mqtt topic");
+                logger.debug("[" + socketObj.id + "] subscribed to mqtt topic");
             }
         });
     });
 
     mqttClient.on('message', function (topic, message) {
         // message is Buffer
-        console.log(message.toString());
         socketObj.emit(topic, message.toString());
     })
 
 
     socketObj.on('disconnect', async () => {
-        logger.info('Client disconnected, socket: ', socketObj.id);
+        logger.info("[" + socketObj.id + '] client disconnected');
         await mqttClient.end();
     });
 
