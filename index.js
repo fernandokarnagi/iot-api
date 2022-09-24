@@ -27,12 +27,6 @@ const mqttOptions = {
     protocolVersion: 4,
 };
 
-// const liquidRoputer = require('./api/liquid');
-// app.use('/api/liquid', liquidRouter);
-
-// const analyticsRouter = require('./api/analytics');
-// app.use('/api/analytics', analyticsRouter);
-
 // Liquid Socket IO handler
 const liquid = require('socket.io')(server, {
     path: '/liquid',
